@@ -41,12 +41,8 @@ parts:
     source: snap/local
     override-pull: |
       cd $SNAPCRAFT_PROJECT_DIR
-      if [ -f VERSION ]; then
-        PROJECT_VERSION=$(cat VERSION)
-      else
-        PROJECT_VERSION="0.0.0"
-      fi
-      snapcraftctl set-version ${PROJECT_VERSION}
+      GIT_VERSION=$(git describe --tags --abbrev=0 | sed 's/v//')
+      snapcraftctl set-version ${GIT_VERSION}
   go:
     plugin: nil
     source: snap/local
