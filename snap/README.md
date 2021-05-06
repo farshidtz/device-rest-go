@@ -63,3 +63,4 @@ This needs to be done before the device service is started for the first time. O
 ```bash
 $ sudo snap start edgex-device-rest.device-rest-go
 ```
+**Note** - content interfaces from snaps installed from the Snap Store that have the same publisher connect automatically. For more information on snap content interfaces please refer to the snapcraft.io [Content Interface](https://snapcraft.io/docs/content-interface) documentation.
