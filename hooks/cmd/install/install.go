@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	hooks "github.com/canonical/edgex-snap-hooks"
 )
@@ -72,19 +71,9 @@ func installDevProfiles() error {
 }
 
 func main() {
-	var debug = false
 	var err error
 
-	status, err := cli.Config("debug")
-	if err != nil {
-		fmt.Println(fmt.Sprintf("edgex-device-rest:install: can't read value of 'debug': %v", err))
-		os.Exit(1)
-	}
-	if status == "true" {
-		debug = true
-	}
-
-	if err = hooks.Init(debug, "edgex-device-rest"); err != nil {
+	if err = hooks.Init(false, "edgex-device-rest"); err != nil {
 		fmt.Println(fmt.Sprintf("edgex-device-rest::install: initialization failure: %v", err))
 		os.Exit(1)
 
@@ -102,48 +91,12 @@ func main() {
 		os.Exit(1)
 	}
 
-	cli := hooks.NewSnapCtl()
-	svc := fmt.Sprintf("%s.device-rest-go", hooks.SnapInst)
-
-	autostart, err := cli.Config(hooks.AutostartConfig)
+	// disable the service and handle the autostart logic in the configure hook
+	// as default snap configuration is not available when the install hook runs
+	// TODO: update the service name to drop the "-go"
+	err = cli.Stop("device-rest-go", true)
 	if err != nil {
-		hooks.Error(fmt.Sprintf("Reading config 'autostart' failed: %v", err))
+		hooks.Error(fmt.Sprintf("Can't stop service - %v", err))
 		os.Exit(1)
-	}
-
-	// TODO: move profile config before autostart, if profile=default, or
-	// no configuration file exists for the profile, then ignore autostart
-
-	switch strings.ToLower(autostart) {
-	case "true":
-	case "yes":
-		break
-	case "":
-	case "no":
-		// disable this service initially because it requires configuration
-		// with a device profile that will be specific to each installation
-		err = cli.Stop(svc, true)
-		if err != nil {
-			hooks.Error(fmt.Sprintf("Can't stop service - %v", err))
-			os.Exit(1)
-		}
-	default:
-		hooks.Error(fmt.Sprintf("Invalid value for 'autostart' : %s", autostart))
-		os.Exit(1)
-	}
-
-	envJSON, err := cli.Config(hooks.EnvConfig)
-	if err != nil {
-		hooks.Error(fmt.Sprintf("Reading config 'env' failed: %v", err))
-		os.Exit(1)
-	}
-
-	if envJSON != "" {
-		hooks.Debug(fmt.Sprintf("edgex-device-rest:configure: envJSON: %s", envJSON))
-		err = hooks.HandleEdgeXConfig("device-rest-go", envJSON, nil)
-		if err != nil {
-			hooks.Error(fmt.Sprintf("HandleEdgeXConfig failed: %v", err))
-			os.Exit(1)
-		}
 	}
 }
